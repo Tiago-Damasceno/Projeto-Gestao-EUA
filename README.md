@@ -1,4 +1,4 @@
-# PALMACOR Backend MVP — Flask + Supabase
+# GESTÃO DIGITAL INTEGRADA MVP — Flask + Supabase
 
 For the current 23e growth super admin login and trusted activation steps, see
 [SUPER_ADMIN_SETUP.md](SUPER_ADMIN_SETUP.md). The legacy setup notes below describe
