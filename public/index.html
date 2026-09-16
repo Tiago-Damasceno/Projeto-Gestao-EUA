@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>23e Gestão — CRM & Automação Inteligente</title>
+  <meta name="description" content="Plataforma de gestão comercial, leads e atendimento inteligente com IA para empresas.">
+  
+  <!-- Fontes Inter / Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Supabase JS Client para Auth Client-side -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --azul-marinho: #17324D;
+      --verde-petroleo: #0F766E;
+      --dourado: #D4A72C;
+      --fundo: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --texto: #1E293B;
+      --texto-mutado: #64748B;
+      --borda: #E2E8F0;
+      --alerta: #B91C1C;
+      --sucesso: #16A34A;
+      --raio-borda: 8px;
+      --fonte: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--fonte);
+      background-color: var(--fundo);
+      color: var(--texto);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* Utilitários */
+    .oculto { display: none !important; }
+    .flex { display: flex; }
+    .flex-col { display: flex; flex-direction: column; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-2 { gap: 0.5rem; }
+    .gap-4 { gap: 1rem; }
+    .w-full { width: 100%; }
+
+    /* Botões */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: var(--raio-borda);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background-color: var(--azul-marinho);
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background-color: #0f2337;
+    }
+
+    .btn-secondary {
+      background-color: #ffffff;
+      color: var(--texto);
+      border-color: var(--borda);
+    }
+    .btn-secondary:hover {
+      background-color: #F1F5F9;
+    }
+
+    .btn-danger {
+      background-color: var(--alerta);
+      color: #ffffff;
+    }
+    .btn-danger:hover {
+      background-color: #991b1b;
+    }
+
+    .btn-success {
+      background-color: var(--verde-petroleo);
+      color: #ffffff;
+    }
+    .btn-success:hover {
+      background-color: #0d655e;
+    }
+
+    /* Inputs e Form */
+    .form-group {
+      margin-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+
+    .form-group label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--texto);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      font-size: 0.875rem;
+      border: 1px solid var(--borda);
+      border-radius: var(--raio-borda);
+      background-color: #ffffff;
+      color: var(--texto);
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .form-control:focus {
+      border-color: var(--verde-petroleo);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+    }
+
+    /* Layout da Aplicação */
+    #app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background-color: var(--azul-marinho);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 1rem;
+      flex-shrink: 0;
+    }
+
+    .sidebar-brand {
+      font-family: 'Manrope', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .sidebar-brand span {
+      color: var(--dourado);
+    }
+
+    .sidebar-menu {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .sidebar-item a {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      color: #94A3B8;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: var(--raio-borda);
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-item a:hover, .sidebar-item.ativo a {
+      color: #ffffff;
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .sidebar-item.ativo a {
+      border-left: 3px solid var(--verde-petroleo);
+    }
+
+    /* Main Area */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    .top-header {
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--borda);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-color: var(--verde-petroleo);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.875rem;
+    }
+
+    .page-body {
+      padding: 2rem;
+      flex: 1;
+    }
+
+    /* Cards e Grid */
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .card-stat {
+      background-color: var(--card-bg);
+      border: 1px solid var(--borda);
+      border-radius: var(--raio-borda);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .card-stat .valor {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--azul-marinho);
+    }
+
+    .card-stat .label {
+      font-size: 0.875rem;
+      color: var(--texto-mutado);
+    }
+
+    /* Kanban Board */
+    .kanban-board {
+      display: flex;
+      gap: 1rem;
+      overflow-x: auto;
+      padding-bottom: 1rem;
+    }
+
+    .kanban-column {
+      flex: 0 0 280px;
+      background-color: #F1F5F9;
+      border-radius: var(--raio-borda);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-height: calc(100vh - 220px);
+      overflow-y: auto;
+    }
+
+    .kanban-cards {
+      min-height: 5rem;
+      border: 2px dashed transparent;
+      border-radius: var(--raio-borda);
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .kanban-cards.drag-over {
+      background-color: #DBEAFE;
+      border-color: var(--azul-primario);
+    }
+
+    .kanban-header {
+      font-weight: 700;
+      font-size: 0.875rem;
+      color: var(--texto);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--borda);
+    }
+
+    .lead-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--borda);
+      border-radius: var(--raio-borda);
+      padding: 1rem;
+      cursor: grab;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .lead-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+    }
+
+    .lead-card.dragging {
+      cursor: grabbing;
+      opacity: 0.45;
+    }
+
+    .lead-card-heading {
+      min-width: 0;
+    }
+
+    .lead-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 0.5rem;
+    }
+
+    .lead-card-name {
+      font-size: 0.875rem;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .lead-card-price {
+      color: var(--azul-marinho);
+      font-size: 0.875rem;
+      font-weight: 700;
+      margin-top: 0.2rem;
+      white-space: nowrap;
+    }
+
+    .lead-stage-age {
+      color: var(--texto-mutado);
+      font-size: 0.7rem;
+    }
+
+    .lead-card-actions {
+      display: flex;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .lead-chat-button,
+    .lead-edit-button {
+      flex: 0 0 auto;
+      display: inline-grid;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      place-items: center;
+      font-size: 0.95rem;
+      line-height: 1;
+    }
+
+    .conversation-transcript {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: var(--card-bg);
+      border: 1px solid var(--borda);
+      border-radius: var(--raio-borda);
+    }
+
+    .conversation-message-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-height: 28rem;
+      overflow-y: auto;
+      padding: 0.75rem 0;
+    }
+
+    .conversation-message {
+      max-width: min(80%, 36rem);
+      padding: 0.7rem 0.85rem;
+      border-radius: 0.75rem;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .conversation-message-inbound {
+      align-self: flex-start;
+      background: #F1F5F9;
+      color: var(--texto);
+    }
+
+    .conversation-message-outbound {
+      align-self: flex-end;
+      background: #DBEAFE;
+      color: #1E3A8A;
+    }
+
+    .conversation-message-meta {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: 0.68rem;
+      color: var(--texto-mutado);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .badge-ai { background-color: #E0F2FE; color: #0369A1; }
+    .badge-human { background-color: #FEF3C7; color: #B45309; }
+    .badge-paused { background-color: #F3F4F6; color: #4B5563; }
+
+    /* Tela de Auth / Onboarding Centradas */
+    .centered-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background-color: var(--fundo);
+    }
+
+    .auth-box {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card-bg);
+      padding: 2.5rem;
+      border-radius: var(--raio-borda);
+      border: 1px solid var(--borda);
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+    }
+
+    .onboarding-box {
+      width: 100%;
+      max-width: 640px;
+      background: var(--card-bg);
+      padding: 2.5rem;
+      border-radius: var(--raio-borda);
+      border: 1px solid var(--borda);
+    }
+
+    .alert {
+      padding: 0.875rem 1rem;
+      border-radius: var(--raio-borda);
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+
+    .alert-error {
+      background-color: #FEF2F2;
+      border: 1px solid #FCA5A5;
+      color: var(--alerta);
+    }
+
+    .alert-success {
+      background-color: #F0FDF4;
+      border: 1px solid #86EFAC;
+      color: var(--sucesso);
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: #ffffff;
+      padding: 2rem;
+      border-radius: var(--raio-borda);
+      width: 100%;
+      max-width: 540px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      #app-container { flex-direction: column; }
+      .sidebar { width: 100%; padding: 1rem; }
+      .sidebar-menu { flex-direction: row; overflow-x: auto; }
+      .top-header { padding: 1rem; }
+      .page-body { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mensagem Global de Toast/Alerta -->
+  <div id="global-toast" class="alert alert-error oculto" style="position: fixed; top: 1rem; right: 1rem; z-index: 9999;"></div>
+
+  <!-- 1. Tela de Autenticação -->
+  <div id="screen-auth" class="centered-screen">
+    <div class="auth-box">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <h1 style="font-family: 'Manrope', sans-serif; color: var(--azul-marinho); font-size: 1.75rem;">23e <span style="color: var(--dourado);">Gestão</span></h1>
+        <p style="color: var(--texto-mutado); font-size: 0.875rem;">Acesse sua plataforma comercial</p>
+      </div>
+
+      <div id="auth-alert" class="alert alert-error oculto"></div>
+
+      <!-- Formulário de Email/Senha -->
+      <form id="form-login">
+        <div class="form-group">
+          <label for="login-email">E-mail corporativo</label>
+          <input type="email" id="login-email" class="form-control" placeholder="seuemail@empresa.com" required>
+        </div>
+        <div class="form-group">
+          <label for="login-password">Senha</label>
+          <input type="password" id="login-password" class="form-control" placeholder="••••••••" required>
+        </div>
+        <button type="submit" id="btn-login-submit" class="btn btn-primary w-full" style="margin-top: 0.5rem;">Entrar</button>
+      </form>
+
+      <div style="margin: 1.5rem 0; text-align: center; font-size: 0.875rem; color: var(--texto-mutado);">ou</div>
+
+      <!-- Login com Google -->
+      <button id="btn-google-login" class="btn btn-secondary w-full">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+        Entrar com Google
+      </button>
+
+      <div style="margin-top: 1.5rem; text-align: center; font-size: 0.8125rem; color: var(--texto-mutado);">
+        O acesso requer convite prévio da sua empresa.
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Wizard de Onboarding (Primeiro Acesso) -->
+  <div id="screen-onboarding" class="centered-screen oculto">
+    <div class="onboarding-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--borda); padding-bottom: 1rem;">
+        <div>
+          <h2 style="font-family: 'Manrope', sans-serif; color: var(--azul-marinho);">Configuração de Primeiro Acesso</h2>
+          <p style="color: var(--texto-mutado); font-size: 0.875rem;">Etapa <span id="onboarding-step-num">1</span> de 4</p>
+        </div>
+      </div>
+
+      <div id="onboarding-step-1" class="onboarding-step">
+        <h3 style="margin-bottom: 1rem; font-size: 1rem;">1. Seu Perfil</h3>
+        <div class="form-group">
+          <label>Nome Completo</label>
+          <input type="text" id="ob-profile-name" class="form-control" placeholder="Seu nome">
+        </div>
+        <div class="form-group">
+          <label>Telefone / WhatsApp</label>
+          <input type="text" id="ob-profile-phone" class="form-control" placeholder="+1 (555) 000-0000">
+        </div>
+        <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+          <button class="btn btn-primary" onclick="nextOnboardingStep(2)">Próximo: Empresa →</button>
+        </div>
+      </div>
+
+      <div id="onboarding-step-2" class="onboarding-step oculto">
+        <h3 style="margin-bottom: 1rem; font-size: 1rem;">2. Sua Empresa</h3>
+        <div class="form-group">
+          <label>Nome Comercial</label>
+          <input type="text" id="ob-company-name" class="form-control" placeholder="Nome da empresa">
+        </div>
+        <div class="form-group">
+          <label>Tipos de Serviços Oferecidos</label>
+          <input type="text" id="ob-company-services" class="form-control" placeholder="Ex: Limpeza, Pintura, Reformas">
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 1.5rem;">
+          <button class="btn btn-secondary" onclick="nextOnboardingStep(1)">← Voltar</button>
+          <button class="btn btn-primary" onclick="nextOnboardingStep(3)">Próximo: Atendimento →</button>
+        </div>
+      </div>
+
+      <div id="onboarding-step-3" class="onboarding-step oculto">
+        <h3 style="margin-bottom: 1rem; font-size: 1rem;">3. Atendimento e Notificações</h3>
+        <div class="form-group">
+          <label>E-mail para Notificações</label>
+          <input type="email" id="ob-support-email" class="form-control" placeholder="notifica@empresa.com">
+        </div>
+        <div class="form-group">
+          <label>Telefone Principal para Ligações</label>
+          <input type="text" id="ob-support-phone" class="form-control" placeholder="+1 (555) 111-2222">
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 1.5rem;">
+          <button class="btn btn-secondary" onclick="nextOnboardingStep(2)">← Voltar</button>
+          <button class="btn btn-primary" onclick="nextOnboardingStep(4)">Próximo: Automação →</button>
+        </div>
+      </div>
+
+      <div id="onboarding-step-4" class="onboarding-step oculto">
+        <h3 style="margin-bottom: 1rem; font-size: 1rem;">4. Atendente de IA</h3>
+        <p style="font-size: 0.875rem; color: var(--texto-mutado); margin-bottom: 1rem;">
+          O atendente com IA responde seus novos leads automaticamente. Você ou sua equipe podem assumir qualquer conversa a qualquer momento no painel.
+        </p>
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="ob-ai-enable" checked style="width: 18px; height: 18px;">
+            Ativar o atendente de IA imediatamente para a empresa
+          </label>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 1.5rem;">
+          <button class="btn btn-secondary" onclick="nextOnboardingStep(3)">← Voltar</button>
+          <button class="btn btn-success" onclick="finishOnboarding()">Concluir e Acessar Painel ✓</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 3. Aplicação Principal (Dashboard / Leads / Conversas / Configs) -->
+  <div id="screen-main" class="oculto">
+    <div id="app-container">
+      
+      <!-- Sidebar de Navegação -->
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          23e <span>Gestão</span>
+        </div>
+        <ul class="sidebar-menu">
+          <li class="sidebar-item ativo" id="nav-dashboard"><a href="#" onclick="navigateView('dashboard')">📊 Dashboard</a></li>
+          <li class="sidebar-item" id="nav-leads"><a href="#" onclick="navigateView('leads')">👥 Leads</a></li>
+          <li class="sidebar-item" id="nav-conversations"><a href="#" onclick="showAllConversations()">💬 Conversas</a></li>
+          <li class="sidebar-item" id="nav-settings"><a href="#" onclick="navigateView('settings')">⚙️ Configurações</a></li>
+        </ul>
+      </aside>
+
+      <!-- Área de Conteúdo -->
+      <main class="main-content">
+        <header class="top-header">
+          <div class="flex items-center gap-4">
+            <h2 id="header-company-name" style="font-family: 'Manrope', sans-serif; font-size: 1.125rem; color: var(--azul-marinho);">Minha Empresa</h2>
+            <!-- Seletor Global de Empresa para Master / Marketing -->
+            <select id="header-company-selector" class="form-control oculto" style="max-width: 220px; font-size: 0.8125rem;" onchange="switchCompanyFilter(this.value)">
+              <option value="">Minha Empresa Matriz</option>
+            </select>
+          </div>
+          <div class="user-profile">
+            <div class="avatar" id="header-user-avatar">U</div>
+            <div class="flex-col">
+              <span id="header-user-name" style="font-weight: 600; font-size: 0.875rem;">Usuário</span>
+              <span id="header-user-role" style="font-size: 0.75rem; color: var(--texto-mutado);">Operador</span>
+            </div>
+            <button class="btn btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem; margin-left: 1rem;" onclick="logout()">Sair</button>
+          </div>
+        </header>
+
+
+        <div class="page-body">
+
+          <!-- View: Dashboard -->
+          <section id="view-dashboard">
+            <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem;">Visão Geral</h2>
+            <div class="grid-cards">
+              <div class="card-stat">
+                <div class="valor" id="stat-new-leads">0</div>
+                <div class="label">Novos Leads</div>
+              </div>
+              <div class="card-stat">
+                <div class="valor" id="stat-awaiting-reply">0</div>
+                <div class="label">Aguardando Resposta</div>
+              </div>
+              <div class="card-stat">
+                <div class="valor" id="stat-visits-scheduled">0</div>
+                <div class="label">Visitas Agendadas</div>
+              </div>
+              <div class="card-stat">
+                <div class="valor" id="stat-ai-active">0</div>
+                <div class="label">Atendimentos IA Ativa</div>
+              </div>
+              <div class="card-stat">
+                <div class="valor" id="stat-human-req" style="color: var(--alerta);">0</div>
+                <div class="label">Solicitações Atendimento Humano</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- View: Leads -->
+          <section id="view-leads" class="oculto">
+            <div class="flex justify-between items-center" style="margin-bottom: 1.5rem;">
+              <h2>Leads Comercial</h2>
+              <button class="btn btn-primary" onclick="openNewLeadModal()">+ Novo Lead</button>
+            </div>
+
+            <!-- Kanban Board -->
+            <div class="kanban-board" id="kanban-container">
+              <!-- As colunas do Kanban serão renderizadas via JS -->
+            </div>
+          </section>
+
+          <!-- View: Conversas -->
+          <section id="view-conversations" class="oculto">
+            <h2 style="margin-bottom: 1.5rem;">Conversas & Robô de IA</h2>
+            <div id="conversations-list-container" class="flex-col gap-4">
+              <!-- Conversas renderizadas via JS -->
+            </div>
+            <div id="conversation-transcript" class="conversation-transcript oculto"></div>
+          </section>
+
+          <!-- View: Configurações -->
+          <section id="view-settings" class="oculto">
+            <h2 style="margin-bottom: 1.5rem;">Configurações da Empresa</h2>
+            
+            <!-- Controle de Automação Geral -->
+            <div style="background: var(--card-bg); border: 1px solid var(--borda); padding: 1.5rem; border-radius: var(--raio-borda); margin-bottom: 1.5rem;">
+              <h3 style="margin-bottom: 0.5rem; font-size: 1rem;">Robô de Atendimento Geral</h3>
+              <p style="color: var(--texto-mutado); font-size: 0.875rem; margin-bottom: 1rem;">
+                Quando desligado, nenhuma resposta automática de IA é emitida para novos leads em toda a empresa.
+              </p>
+              <div class="flex items-center gap-4">
+                <label style="font-weight: 600;">Status Atual:</label>
+                <span id="company-automation-badge" class="badge badge-ai">Ativado</span>
+                <button id="btn-toggle-company-automation" class="btn btn-secondary" onclick="openToggleAutomationModal()">Alterar Estado da Automação</button>
+              </div>
+            </div>
+
+            <!-- Formulário de Convites -->
+            <div style="background: var(--card-bg); border: 1px solid var(--borda); padding: 1.5rem; border-radius: var(--raio-borda);">
+              <h3 style="margin-bottom: 0.5rem; font-size: 1rem;">Convidar Membro para a Equipe</h3>
+              <form id="form-invite-member" class="flex gap-4 items-center" style="max-width: 600px;">
+                <input type="email" id="invite-email" class="form-control" placeholder="email@equipe.com" required>
+                <select id="invite-role" class="form-control" style="width: 150px;">
+                  <option value="operator">Operador</option>
+                  <option value="company_owner">Administrador</option>
+                </select>
+                <button type="submit" class="btn btn-primary">Enviar Convite</button>
+              </form>
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: Novo Lead -->
+  <div id="modal-lead" class="modal-backdrop oculto">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 1rem;" id="modal-lead-title">Cadastrar Novo Lead</h3>
+      <form id="form-lead">
+        <div class="form-group">
+          <label>Nome do Cliente *</label>
+          <input type="text" id="lead-full-name" class="form-control" required placeholder="Ex: Maria Silva">
+        </div>
+        <div class="form-group">
+          <label>Telefone / WhatsApp</label>
+          <input type="text" id="lead-phone" class="form-control" placeholder="+1 (555) 000-0000">
+        </div>
+        <div class="form-group">
+          <label>E-mail</label>
+          <input type="email" id="lead-email" class="form-control" placeholder="maria@email.com">
+        </div>
+        <div class="form-group">
+          <label>Tipo de Serviço</label>
+          <input type="text" id="lead-service-type" class="form-control" placeholder="Ex: Limpeza Residencial">
+        </div>
+        <div class="form-group">
+          <label>Valor Estimado (USD)</label>
+          <input type="number" id="lead-estimated-value" class="form-control" min="0" step="0.01" placeholder="Ex: 1250.00">
+        </div>
+        <div class="form-group" id="lead-stage-group">
+          <label>Etapa Inicial</label>
+          <select id="lead-stage" class="form-control">
+            <option value="new">Novo Lead</option>
+            <option value="contacted">Em Qualificação</option>
+            <option value="visit_scheduled">Visita Agendada</option>
+          </select>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="closeLeadModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Lead</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Desligar Automação da Empresa (Exige Motivo) -->
+  <div id="modal-toggle-automation" class="modal-backdrop oculto">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 1rem; color: var(--alerta);">Confirmar Alteração do Robô</h3>
+      <p style="font-size: 0.875rem; margin-bottom: 1rem;">
+        Você está prestes a desativar a automação de IA para toda a empresa. Informe a justificativa:
+      </p>
+      <div class="form-group">
+        <label>Motivo do Desligamento *</label>
+        <textarea id="automation-disable-reason" class="form-control" rows="3" placeholder="Ex: Manutenção da equipe ou feriado nacional"></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
+        <button class="btn btn-secondary" onclick="closeAutomationModal()">Cancelar</button>
+        <button class="btn btn-danger" onclick="confirmToggleAutomation(false)">Confirmar Desligamento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script da Aplicação Frontend -->
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script>
+    // Inicialização do Supabase Client para login Google / Email
+    let authReady = false;
+    let sessionLoading = null;
+    let sessionVersion = 0;
+    
+    // Etapas Padrão dos Leads
+    const STAGES_MAP = {
+      'new': 'Novo',
+      'contacted': 'Em qualificação',
+      'visit_scheduled': 'Visita agendada',
+      'estimate_sent': 'Estimate enviado',
+      'follow_up': 'Follow-up',
+      'won': 'Fechado',
+      'lost': 'Perdido'
+    };
+
+    let currentUser = null;
+    let currentLeads = [];
+    let draggedLeadId = null;
+    let selectedConversationLeadId = null;
+    let selectedConversationId = null;
+    let editingLeadId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Ouvir eventos globais de erro da API
+      window.addEventListener('23e:access_denied', (e) => {
+        showAuthAlert(e.detail?.message || 'Seu acesso ainda não foi liberado. Solicite o convite ao administrador da sua empresa.');
+      });
+      window.addEventListener('23e:unauthorized', (e) => {
+        sessionVersion++;
+        currentUser = null;
+        showAuthScreen();
+        showAuthAlert(e.detail?.message || 'Sessão inválida ou e-mail/senha incorretos.');
+      });
+
+      // Bind forms before asynchronous initialization, including failure cases.
+      document.getElementById('form-login').addEventListener('submit', handleLogin);
+      document.getElementById('btn-google-login').addEventListener('click', handleGoogleLogin);
+      document.getElementById('form-lead').addEventListener('submit', handleSaveLead);
+      document.getElementById('form-invite-member').addEventListener('submit', handleSendInvite);
+      window.addEventListener('23e:session', ({ detail }) => {
+        if (detail.event === 'SIGNED_OUT') {
+          sessionVersion++;
+          currentUser = null;
+          window.apiClient.setCompany(null);
+          showAuthScreen();
+        } else if (authReady && detail.session && currentUser?.id !== detail.session.user.id) {
+          loadUserSession().catch(() => {});
+        }
+      });
+      try {
+        const session = await window.authSession.initialize();
+        authReady = true;
+        if (session) await loadUserSession();
+        else showAuthScreen();
+      } catch (error) {
+        showAuthScreen();
+        showAuthAlert(error.message || 'Não foi possível iniciar o login.');
+      }
+    });
+
+    function showAuthScreen() {
+      document.getElementById('screen-auth').classList.remove('oculto');
+      document.getElementById('screen-onboarding').classList.add('oculto');
+      document.getElementById('screen-main').classList.add('oculto');
+      document.getElementById('header-company-selector').classList.add('oculto');
+      window.apiClient.setCompany(null);
+    }
+
+    let selectedCompanyIdFilter = '';
+
+    function loadUserSession() {
+      if (!sessionLoading) {
+        sessionLoading = fetchUserSession().finally(() => { sessionLoading = null; });
+      }
+      return sessionLoading;
+    }
+
+    async function fetchUserSession() {
+      const version = sessionVersion;
+      try {
+        const res = await window.apiClient.getMe();
+        if (version !== sessionVersion) return;
+        if (currentUser?.id !== res.data.id) {
+          window.apiClient.setCompany(null);
+          selectedCompanyIdFilter = '';
+        }
+        currentUser = res.data;
+
+        if (!currentUser.onboarding_completed) {
+          document.getElementById('screen-auth').classList.add('oculto');
+          document.getElementById('screen-onboarding').classList.remove('oculto');
+          document.getElementById('screen-main').classList.add('oculto');
+          return;
+        }
+
+        // Sessão ativa e Onboarding Completo -> Abrir Main Screen
+        document.getElementById('screen-auth').classList.add('oculto');
+        document.getElementById('screen-onboarding').classList.add('oculto');
+        document.getElementById('screen-main').classList.remove('oculto');
+
+        // Atualizar Header
+        document.getElementById('header-user-name').innerText = currentUser.full_name || currentUser.email;
+        const roleLabel = {
+          'platform_admin': 'Super admin (23e growth)',
+          'marketing_admin': 'Marketing Digital (Tráfego)',
+          'company_owner': 'Proprietário',
+          'operator': 'Operador'
+        }[currentUser.role] || currentUser.role;
+
+        document.getElementById('header-user-role').innerText = roleLabel;
+        if (currentUser.company) {
+          document.getElementById('header-company-name').innerText = currentUser.company.name;
+        }
+
+        // Carregar empresas se for Master ou Marketing
+        if (currentUser.role === 'platform_admin' || currentUser.role === 'marketing_admin') {
+          loadCompanySelector();
+        }
+
+        navigateView('dashboard');
+      } catch (err) {
+        if (err.code === 'access_not_granted') {
+          showAuthAlert(err.message || 'Seu acesso ainda não foi liberado. Solicite o convite ao administrador da sua empresa.');
+        } else {
+          showAuthAlert(err.message || 'Erro ao carregar sessão do usuário.');
+          showAuthScreen();
+        }
+        throw err;
+      }
+    }
+
+    async function loadCompanySelector() {
+      try {
+        const res = await window.apiClient.request('/companies');
+        const selector = document.getElementById('header-company-selector');
+        selector.classList.remove('oculto');
+        const homeCompanyName = currentUser.company?.name || '23e growth';
+        selector.replaceChildren(new Option(homeCompanyName, ''));
+        (res.data || []).forEach(item => {
+          const comp = item.company || item;
+          if (comp && comp.id && comp.id !== currentUser.company_id) {
+            selector.add(new Option(comp.name, comp.id));
+          }
+        });
+      } catch (e) {}
+    }
+
+    function switchCompanyFilter(companyId) {
+      selectedCompanyIdFilter = companyId;
+      window.apiClient.setCompany(companyId);
+      navigateView('dashboard');
+    }
+
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      hideAuthAlert();
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const btn = document.getElementById('btn-login-submit');
+
+      btn.disabled = true;
+      btn.innerText = 'Autenticando...';
+
+      try {
+        await window.authSession.signIn(email, password);
+        document.getElementById('login-password').value = '';
+        await loadUserSession();
+      } catch (err) {
+        showAuthAlert(err.message || 'E-mail ou senha incorretos.');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Entrar';
+      }
+    }
+
+    async function handleGoogleLogin() {
+      try {
+        hideAuthAlert();
+        await window.authSession.signInWithGoogle();
+      } catch (error) {
+        showAuthAlert(error.message || 'Não foi possível entrar com Google.');
+      }
+    }
+
+    function showAuthAlert(msg) {
+      const el = document.getElementById('auth-alert');
+      el.innerText = msg;
+      el.classList.remove('oculto');
+    }
+
+    function hideAuthAlert() {
+      const el = document.getElementById('auth-alert');
+      el.classList.add('oculto');
+    }
+
+    async function logout() {
+      sessionVersion++;
+      try {
+        await window.authSession.signOut();
+        currentUser = null;
+        selectedCompanyIdFilter = '';
+        showAuthScreen();
+      } catch (error) {
+        alert(error.message || 'Não foi possível encerrar a sessão.');
+      }
+    }
+
+    // Wizard Onboarding
+    function nextOnboardingStep(step) {
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`onboarding-step-${i}`).classList.add('oculto');
+      }
+      document.getElementById(`onboarding-step-${step}`).classList.remove('oculto');
+      document.getElementById('onboarding-step-num').innerText = step;
+    }
+
+    async function finishOnboarding() {
+      const payload = {
+        profile_data: {
+          name: document.getElementById('ob-profile-name').value || 'Usuário',
+          phone: document.getElementById('ob-profile-phone').value || ''
+        },
+        company_data: {
+          name: document.getElementById('ob-company-name').value || 'Minha Empresa',
+          services: document.getElementById('ob-company-services').value || ''
+        },
+        support_data: {
+          email: document.getElementById('ob-support-email').value || '',
+          phone: document.getElementById('ob-support-phone').value || ''
+        },
+        automation_data: {
+          ai_enabled: document.getElementById('ob-ai-enable').checked
+        },
+        completed: true
+      };
+
+      try {
+        await window.apiClient.completeOnboarding(payload);
+        await loadUserSession();
+      } catch (err) {
+        alert(err.message || 'Erro ao salvar onboarding');
+      }
+    }
+
+    // Navegação Principal
+    function navigateView(viewName) {
+      ['dashboard', 'leads', 'conversations', 'settings'].forEach(v => {
+        document.getElementById(`view-${v}`).classList.add('oculto');
+        document.getElementById(`nav-${v}`).classList.remove('ativo');
+      });
+
+      document.getElementById(`view-${viewName}`).classList.remove('oculto');
+      document.getElementById(`nav-${viewName}`).classList.add('ativo');
+
+      if (viewName === 'dashboard') loadDashboard();
+      if (viewName === 'leads') loadLeads();
+      if (viewName === 'conversations') loadConversations();
+      if (viewName === 'settings') loadSettings();
+    }
+
+    async function loadDashboard() {
+      try {
+        const res = await window.apiClient.getDashboardStats();
+        const s = res.data;
+        document.getElementById('stat-new-leads').innerText = s.new_leads || 0;
+        document.getElementById('stat-awaiting-reply').innerText = s.awaiting_reply || 0;
+        document.getElementById('stat-visits-scheduled').innerText = s.visits_scheduled || 0;
+        document.getElementById('stat-ai-active').innerText = s.ai_active || 0;
+        document.getElementById('stat-human-req').innerText = s.human_requested || 0;
+      } catch (e) {}
+    }
+
+    async function loadLeads() {
+      try {
+        const res = await window.apiClient.getLeads();
+        currentLeads = res.data || [];
+        renderKanban(currentLeads);
+      } catch (e) {}
+    }
+
+    function escapeHtml(value) {
+      const replacements = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return String(value ?? '').replace(/[&<>"']/g, character => replacements[character]);
+    }
+
+    function formatLeadPrice(value) {
+      if (value === null || value === undefined || value === '') return '$0,00';
+      const amount = Number(value);
+      if (!Number.isFinite(amount)) return '$0,00';
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    }
+
+    function formatDaysInStage(enteredAt) {
+      if (!enteredAt) return 'Tempo indisponível';
+      const entered = new Date(enteredAt);
+      if (Number.isNaN(entered.getTime())) return 'Tempo indisponível';
+      const days = Math.max(0, Math.floor((Date.now() - entered.getTime()) / 86400000));
+      if (days === 0) return 'Hoje nesta etapa';
+      if (days === 1) return '1 dia nesta etapa';
+      return `${days} dias nesta etapa`;
+    }
+
+    function renderKanban(leads) {
+      const container = document.getElementById('kanban-container');
+      container.innerHTML = '';
+
+      Object.keys(STAGES_MAP).forEach(stageKey => {
+        const colLeads = leads.filter(l => l.stage === stageKey);
+        const col = document.createElement('div');
+        col.className = 'kanban-column';
+        col.innerHTML = `
+          <div class="kanban-header">
+            <span>${STAGES_MAP[stageKey]}</span>
+            <span class="badge" style="background:#E2E8F0; color:#334155;">${colLeads.length}</span>
+          </div>
+          <div class="kanban-cards flex-col gap-2">
+            ${colLeads.map(l => `
+              <div class="lead-card">
+                <div class="lead-card-heading">
+                  <div class="lead-card-name">${escapeHtml(l.full_name)}</div>
+                  <div class="lead-card-price">Valor: ${formatLeadPrice(l.estimated_value)}</div>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--texto-mutado); margin-top: 0.25rem;">${escapeHtml(l.service_type || 'Sem serviço')}</div>
+                <div class="lead-card-footer" style="margin-top: 0.75rem; align-items: flex-end;">
+                  <div class="flex-col" style="gap: 0.35rem;">
+                    <span class="lead-stage-age">⏱ ${formatDaysInStage(l.stage_entered_at)}</span>
+                    <span class="badge ${l.automation_status === 'human_active' ? 'badge-human' : 'badge-ai'}">
+                      ${l.automation_status === 'human_active' ? 'Humano' : 'IA Ativa'}
+                    </span>
+                  </div>
+                  <div class="lead-card-actions">
+                    <button type="button" class="btn btn-secondary lead-edit-button" aria-label="Editar lead" title="Editar lead">✎</button>
+                    <button type="button" class="btn btn-secondary lead-chat-button" aria-label="Abrir chat" title="Abrir chat">💬</button>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        const dropZone = col.querySelector('.kanban-cards');
+        dropZone.addEventListener('dragover', handleLeadDragOver);
+        dropZone.addEventListener('dragleave', handleLeadDragLeave);
+        dropZone.addEventListener('drop', event => handleLeadDrop(event, stageKey));
+        col.querySelectorAll('.lead-card').forEach((card, index) => {
+          card.draggable = true;
+          card.addEventListener('dragstart', event => handleLeadDragStart(event, colLeads[index].id));
+          card.addEventListener('dragend', handleLeadDragEnd);
+          card.querySelector('.lead-edit-button').addEventListener('click', event => {
+            event.stopPropagation();
+            openEditLead(colLeads[index].id);
+          });
+          card.querySelector('.lead-chat-button').addEventListener('click', event => {
+            event.stopPropagation();
+            openLeadChat(colLeads[index].id);
+          });
+        });
+        container.appendChild(col);
+      });
+    }
+
+    function handleLeadDragStart(event, leadId) {
+      draggedLeadId = leadId;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', leadId);
+      event.currentTarget.classList.add('dragging');
+    }
+
+    function handleLeadDragEnd(event) {
+      event.currentTarget.classList.remove('dragging');
+      document.querySelectorAll('.kanban-cards.drag-over').forEach(el => el.classList.remove('drag-over'));
+    }
+
+    function handleLeadDragOver(event) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      event.currentTarget.classList.add('drag-over');
+    }
+
+    function handleLeadDragLeave(event) {
+      if (!event.relatedTarget || !event.currentTarget.contains(event.relatedTarget)) {
+        event.currentTarget.classList.remove('drag-over');
+      }
+    }
+
+    async function handleLeadDrop(event, newStage) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.currentTarget.classList.remove('drag-over');
+      const leadId = event.dataTransfer.getData('text/plain') || draggedLeadId;
+      draggedLeadId = null;
+      const lead = currentLeads.find(item => item.id === leadId);
+      if (!lead || lead.stage === newStage) return;
+
+      const previousStage = lead.stage;
+      lead.stage = newStage;
+      renderKanban(currentLeads);
+      try {
+        await window.apiClient.moveLeadStage(leadId, newStage);
+        await loadLeads();
+        loadDashboard();
+      } catch (error) {
+        lead.stage = previousStage;
+        renderKanban(currentLeads);
+        alert(error.message || 'Erro ao mover lead.');
+      }
+    }
+
+    function openNewLeadModal() {
+      editingLeadId = null;
+      document.getElementById('modal-lead-title').innerText = 'Cadastrar Novo Lead';
+      document.getElementById('form-lead').reset();
+      document.getElementById('lead-stage-group').classList.remove('oculto');
+      document.getElementById('modal-lead').classList.remove('oculto');
+    }
+
+    function openEditLead(leadId) {
+      const lead = currentLeads.find(item => item.id === leadId);
+      if (!lead) return;
+      editingLeadId = leadId;
+      document.getElementById('modal-lead-title').innerText = 'Editar Lead';
+      document.getElementById('lead-full-name').value = lead.full_name || '';
+      document.getElementById('lead-phone').value = lead.phone || '';
+      document.getElementById('lead-email').value = lead.email || '';
+      document.getElementById('lead-service-type').value = lead.service_type || '';
+      document.getElementById('lead-estimated-value').value = lead.estimated_value ?? '';
+      document.getElementById('lead-stage-group').classList.add('oculto');
+      document.getElementById('modal-lead').classList.remove('oculto');
+    }
+
+    function closeLeadModal() {
+      document.getElementById('modal-lead').classList.add('oculto');
+      editingLeadId = null;
+    }
+
+    async function handleSaveLead(e) {
+      e.preventDefault();
+      const estimatedValue = document.getElementById('lead-estimated-value').value;
+      const payload = {
+        full_name: document.getElementById('lead-full-name').value,
+        phone: document.getElementById('lead-phone').value,
+        email: document.getElementById('lead-email').value,
+        service_type: document.getElementById('lead-service-type').value,
+        estimated_value: estimatedValue === '' ? null : estimatedValue
+      };
+
+      if (!editingLeadId) payload.stage = document.getElementById('lead-stage').value;
+
+      try {
+        if (editingLeadId) {
+          await window.apiClient.updateLead(editingLeadId, payload);
+        } else {
+          await window.apiClient.createLead(payload);
+        }
+        closeLeadModal();
+        await loadLeads();
+        loadDashboard();
+      } catch (err) {
+        alert(err.message || 'Erro ao salvar lead');
+      }
+    }
+
+    function openLeadChat(leadId) {
+      selectedConversationLeadId = leadId;
+      selectedConversationId = null;
+      navigateView('conversations');
+    }
+
+    function showAllConversations() {
+      selectedConversationLeadId = null;
+      selectedConversationId = null;
+      document.getElementById('conversation-transcript').classList.add('oculto');
+      navigateView('conversations');
+    }
+
+    async function loadConversations() {
+      try {
+        const res = await window.apiClient.getConversations();
+        let convs = res.data || [];
+        const container = document.getElementById('conversations-list-container');
+
+        if (selectedConversationLeadId) {
+          const selectedLead = currentLeads.find(lead => lead.id === selectedConversationLeadId);
+          convs = convs.filter(conversation => conversation.lead_id === selectedConversationLeadId);
+          if (convs.length === 0) {
+            container.innerHTML = `
+              <div style="background: var(--card-bg); border: 1px solid var(--borda); padding: 1.5rem; border-radius: var(--raio-borda);">
+                <h3 style="margin-bottom: 0.5rem;">Chat com ${escapeHtml(selectedLead?.full_name || 'este lead')}</h3>
+                <p style="color: var(--texto-mutado); margin-bottom: 1rem;">A conversa ainda não foi iniciada. Quando a automação do WhatsApp criar a conversa, ela aparecerá aqui.</p>
+                <button type="button" class="btn btn-secondary" onclick="showAllConversations()">← Todas as conversas</button>
+              </div>`;
+            return;
+          }
+        }
+
+        if (convs.length === 0) {
+          container.innerHTML = `<div style="color: var(--texto-mutado);">Nenhuma conversa ativa no momento.</div>`;
+          return;
+        }
+
+        const backButton = selectedConversationLeadId
+          ? `<button type="button" class="btn btn-secondary" style="margin-bottom: 1rem;" onclick="showAllConversations()">← Todas as conversas</button>`
+          : '';
+        container.innerHTML = backButton + convs.map(c => `
+          <div style="background: var(--card-bg); border: 1px solid var(--borda); padding: 1rem; border-radius: var(--raio-borda);" class="flex justify-between items-center">
+            <div>
+              <div style="font-weight: 600;">${escapeHtml(c.lead?.full_name || 'Lead sem nome')}</div>
+              <div style="font-size: 0.8125rem; color: var(--texto-mutado);">${escapeHtml(c.lead?.phone || '')}</div>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="badge ${c.automation_status === 'human_active' ? 'badge-human' : 'badge-ai'}">
+                ${c.automation_status === 'human_active' ? 'Atendimento Humano' : 'IA Respondedor'}
+              </span>
+              ${c.automation_status === 'ai_active' ? `
+                <button class="btn btn-secondary" onclick="toggleConversationAutomation('${c.id}', 'human_active')">Assumir Conversa 🙋‍♂️</button>
+              ` : `
+                <button class="btn btn-success" onclick="toggleConversationAutomation('${c.id}', 'ai_active')">Devolver para IA 🤖</button>
+              `}
+              <button class="btn btn-primary" onclick="openConversation('${c.id}')">Abrir chat</button>
+            </div>
+          </div>
+        `).join('');
+        if (selectedConversationLeadId && convs[0]) {
+          await openConversation(convs[0].id);
+        } else if (selectedConversationId) {
+          await openConversation(selectedConversationId);
+        }
+      } catch (e) {}
+    }
+
+    function formatMessageTime(value) {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      return new Intl.DateTimeFormat('pt-BR', {
+        dateStyle: 'short',
+        timeStyle: 'short'
+      }).format(date);
+    }
+
+    async function openConversation(conversationId) {
+      const transcript = document.getElementById('conversation-transcript');
+      selectedConversationId = conversationId;
+      transcript.classList.remove('oculto');
+      transcript.innerHTML = '<div style="color: var(--texto-mutado);">Carregando mensagens...</div>';
+      try {
+        const response = await window.apiClient.getConversationMessages(conversationId);
+        const messages = response.data || [];
+        const content = messages.length
+          ? messages.map(message => {
+              const direction = message.direction === 'outbound' ? 'outbound' : 'inbound';
+              const sender = message.sender_type === 'lead'
+                ? 'Lead'
+                : message.sender_type === 'human' ? 'Humano' : 'IA';
+              const timestamp = formatMessageTime(message.created_at);
+              return '<div class="conversation-message conversation-message-' + direction + '">'
+                + escapeHtml(message.content || '')
+                + '<span class="conversation-message-meta">'
+                + escapeHtml(sender)
+                + (timestamp ? ' · ' + escapeHtml(timestamp) : '')
+                + '</span></div>';
+            }).join('')
+          : '<div style="color: var(--texto-mutado);">Nenhuma mensagem armazenada.</div>';
+        transcript.innerHTML = '<div class="flex justify-between items-center">'
+          + '<h3>Histórico da conversa</h3>'
+          + '<button type="button" class="btn btn-secondary" onclick="closeConversation()">Fechar</button>'
+          + '</div><div class="conversation-message-list">' + content + '</div>';
+        const list = transcript.querySelector('.conversation-message-list');
+        if (list) list.scrollTop = list.scrollHeight;
+      } catch (error) {
+        transcript.innerHTML = '<div class="alert alert-error">'
+          + escapeHtml(error.message || 'Erro ao carregar mensagens.')
+          + '</div>';
+      }
+    }
+
+    function closeConversation() {
+      selectedConversationId = null;
+      const transcript = document.getElementById('conversation-transcript');
+      transcript.classList.add('oculto');
+      transcript.innerHTML = '';
+    }
+
+    async function toggleConversationAutomation(id, status) {
+      try {
+        await window.apiClient.updateConversationAutomation(id, { automation_status: status });
+        loadConversations();
+      } catch (e) {
+        alert(e.message || 'Erro ao atualizar robô na conversa');
+      }
+    }
+
+    async function loadSettings() {
+      try {
+        const res = await window.apiClient.getCompanyAutomation();
+        const enabled = res.data?.automation_enabled ?? true;
+        const badge = document.getElementById('company-automation-badge');
+        badge.innerText = enabled ? 'Ativado' : 'Desativado';
+        badge.className = `badge ${enabled ? 'badge-ai' : 'badge-paused'}`;
+      } catch (e) {}
+    }
+
+    function openToggleAutomationModal() {
+      document.getElementById('modal-toggle-automation').classList.remove('oculto');
+    }
+
+    function closeAutomationModal() {
+      document.getElementById('modal-toggle-automation').classList.add('oculto');
+    }
+
+    async function confirmToggleAutomation(enable) {
+      const reason = document.getElementById('automation-disable-reason').value;
+      if (!enable && !reason) {
+        alert('Informe a justificativa do desligamento.');
+        return;
+      }
+
+      try {
+        await window.apiClient.updateCompanyAutomation(enable, reason);
+        closeAutomationModal();
+        loadSettings();
+      } catch (e) {
+        alert(e.message || 'Erro ao alterar estado da automação');
+      }
+    }
+
+    async function handleSendInvite(e) {
+      e.preventDefault();
+      const email = document.getElementById('invite-email').value;
+      const role = document.getElementById('invite-role').value;
+
+      try {
+        await window.apiClient.createInvitation(email, role);
+        alert(`Convite registrado para ${email}. O envio por e-mail ainda será configurado.`);
+        document.getElementById('form-invite-member').reset();
+      } catch (err) {
+        alert(err.message || 'Erro ao enviar convite');
+      }
+    }
+  </script>
+</body>
+</html>
